@@ -2,17 +2,21 @@
 name = "solana-storage"
 version = "0.1.0"
 edition = "2021"
+authors = ["asthetik"]
 
 [lib]
-# Required for Solana smart contracts to compile to BPF/SBF target
+# Required for compiling the program into the SBF (Solana Bytecode Format) shared object
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-# Using v1.18 to ensure compatibility with the current stable Solana toolchain
-solana-program = "2.3" 
+# Using v3.0 to leverage the latest Agave SDK features
+solana-program = "3.0"
 
-# Pinning to v0.3.1 to avoid Rust Edition 2024 requirements in newer versions
+# Fixed at v1.5.5 to retain 'digest' feature support while avoiding the Edition 2024 requirement
+blake3 = "=1.5.5"
+
+# Pinned to v0.3.1 to prevent manifest parsing errors caused by newer Edition 2024 releases
 constant_time_eq = "=0.3.1" 
 
-# Locked to v1.5.5 to maintain 'digest' feature support while staying on Edition 2021
-blake3 = "=1.5.5"
+# Locked to v1.7.3 to ensure consistent constant-time Base64 encoding/decoding 
+base64ct = "=1.7.3"
