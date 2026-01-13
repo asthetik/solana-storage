@@ -9,7 +9,7 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 # Using v1.18 to ensure compatibility with the current stable Solana toolchain
-solana-program = "1.18" 
+solana-program = "2.3" 
 
 # Pinning to v0.3.1 to avoid Rust Edition 2024 requirements in newer versions
 constant_time_eq = "=0.3.1" 
