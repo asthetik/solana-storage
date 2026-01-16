@@ -10,7 +10,8 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 # Using v3.0 to leverage the latest Agave SDK features
-solana-program = "3.0"
+solana-program = "3.0.0"
+solana-system-interface = { version = "3.0.0", features = ["bincode"] }
 
 # Fixed at v1.5.5 to retain 'digest' feature support while avoiding the Edition 2024 requirement
 blake3 = "=1.5.5"
