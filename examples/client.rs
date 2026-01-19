@@ -14,7 +14,7 @@ use solana_program::{
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // 请改成你的程序地址，不改也可以，默认使用我部署的程序
-    let program_id = Pubkey::from_str("9bkM5WfTd7YbZouo9R19xXYa2q2hCjTiqoMtSan5963i")
+    let program_id = Pubkey::from_str("7xATHjdgza95dsTaUrJZB1K5eSjQdBMxk48qoDrVddQZ")
         .expect("Invalid program ID");
 
     // 默认使用开发环境
