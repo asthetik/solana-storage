@@ -27,6 +27,7 @@ name = "client"
 path = "examples/client.rs"
 
 [dev-dependencies]
+anyhow = "1.0.100"
 borsh = "1.6.0"
 solana-client = "3.1.7"
 solana-keypair = "3.1.0"

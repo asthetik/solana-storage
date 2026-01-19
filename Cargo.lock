@@ -4057,6 +4057,7 @@ dependencies = [
 name = "solana-storage"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "base64ct",
  "blake3",
  "borsh",

@@ -1,9 +1,11 @@
 use std::{path::Path, str::FromStr, time::Duration};
 
+use anyhow::anyhow;
 use solana_client::{
     nonblocking::rpc_client::RpcClient, rpc_config::CommitmentConfig,
     rpc_response::transaction::Transaction,
 };
+use solana_keypair::Address;
 use solana_keypair::{read_keypair_file, Keypair, Signer};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
@@ -11,7 +13,7 @@ use solana_program::{
 };
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     // 请改成你的程序地址，不改也可以，默认使用我部署的程序
     let program_id = Pubkey::from_str("9bkM5WfTd7YbZouo9R19xXYa2q2hCjTiqoMtSan5963i")
         .expect("Invalid program ID");
@@ -26,6 +28,16 @@ async fn main() {
     );
     println!("Wallet address loaded successfully: {}", payer.pubkey());
 
+    init_wallet(&client, &payer).await;
+
+    write_data(client, program_id, &payer, "Hello Solana".as_bytes()).await?;
+
+    Ok(())
+}
+
+// 初始化钱包余额
+// 如果余额小于 0.5 SOL时，才去空投
+async fn init_wallet(client: &RpcClient, payer: &Keypair) {
     let balance = client
         .get_balance(&payer.pubkey())
         .await
@@ -52,76 +64,45 @@ async fn main() {
     } else {
         println!("Balance sufficient: {} lamports", balance);
     }
+}
 
-    println!("\nInitializing counter...");
-    let counter_keypair = Keypair::new();
-    let instruction_data = borsh::to_vec("Hello World!").expect("Failed to serialize instruction");
+async fn write_data(
+    client: RpcClient,
+    program_id: Address,
+    payer: &Keypair,
+    writed_data: &[u8],
+) -> anyhow::Result<()> {
+    let (pda_pubkey, _bump_seed) =
+        Pubkey::find_program_address(&[payer.pubkey().as_ref()], &program_id);
+    println!("Derived PDA: {}", pda_pubkey);
 
-    let initialize_instruction = Instruction::new_with_bytes(
+    let instruction = Instruction::new_with_bytes(
         program_id,
-        &instruction_data,
+        writed_data,
         vec![
-            AccountMeta::new(counter_keypair.pubkey(), true),
             AccountMeta::new(payer.pubkey(), true),
+            AccountMeta::new(pda_pubkey, false),
             AccountMeta::new(solana_system_program::id(), false),
         ],
     );
 
-    let mut transaction =
-        Transaction::new_with_payer(&[initialize_instruction], Some(&payer.pubkey()));
-
-    let blockhash = client
-        .get_latest_blockhash()
-        .await
-        .expect("Failed to get blockhash");
-    transaction.sign(&[&payer, &counter_keypair], blockhash);
-
-    match client.send_and_confirm_transaction(&transaction).await {
-        Ok(signature) => {
-            println!("Counter initialized!");
-            println!("Transaction: {}", signature);
-            println!("Counter address: {}", counter_keypair.pubkey());
-        }
-        Err(err) => {
-            eprintln!("Failed to initial to initialize counter: {}", err);
-            return;
-        }
-    }
-
-    println!("\nIncrementing counter...");
-
-    let increment_data = borsh::to_vec("Hello Solana").expect("Failed to serialize instruction");
-
-    let increment_instruction = Instruction::new_with_bytes(
-        program_id,
-        &increment_data,
-        vec![
-            AccountMeta::new(counter_keypair.pubkey(), true),
-            AccountMeta::new(payer.pubkey(), true),
-            AccountMeta::new(solana_system_program::id(), false),
-        ],
+    let recent_blockhash = client.get_latest_blockhash().await?;
+    let transaction = Transaction::new_signed_with_payer(
+        &[instruction],
+        Some(&payer.pubkey()),
+        &[&payer],
+        recent_blockhash,
     );
 
-    let mut transaction =
-        Transaction::new_with_payer(&[increment_instruction], Some(&payer.pubkey()));
-
-    // 重新获取最新的 Blockhash
-    // 容错性：如果网络拥堵导致 Initialize 交易在链上排队了 30 秒，等你准备发第二笔交易时，最初那个 blockhash 的“生命值”已经过半，失败风险极高。
-    // 避免重复交易检测：Solana 节点会通过 Blockhash 检查交易是否重复。如果你短时间内发送两笔 Blockhash 完全一样的交易，节点可能会误以为是重复提交而拒绝。
-    let (recent_blockhash, _) = client
-        .get_latest_blockhash_with_commitment(CommitmentConfig::confirmed())
-        .await
-        .expect("Failed to get a fresh blockhash for increment");
-    transaction.sign(&[&payer, &counter_keypair], recent_blockhash);
-
     match client.send_and_confirm_transaction(&transaction).await {
-        Ok(signature) => {
-            println!("Counter incremented!");
-            println!("Transaction: {}", signature);
+        Ok(sig) => {
+            println!("Success! Transaction: {}", sig);
+            println!("Data saved to PDA: {}", pda_pubkey);
         }
         Err(err) => {
-            eprintln!("Failed to increment counter: {}", err);
-            return;
+            return Err(anyhow!("Failed to write data: {}", err));
         }
     }
+
+    Ok(())
 }
