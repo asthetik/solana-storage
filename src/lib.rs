@@ -1,6 +1,6 @@
 use solana_program::account_info::next_account_info;
 use solana_program::entrypoint;
-use solana_program::program::invoke_signed;
+use solana_program::program::{invoke, invoke_signed};
 use solana_program::program_error::ProgramError;
 use solana_program::rent::Rent;
 use solana_program::sysvar::Sysvar;
@@ -15,13 +15,11 @@ pub fn process_instruction(
     instruction_data: &[u8],
 ) -> ProgramResult {
     let accounts_iter = &mut accounts.iter();
-
     let account_user = next_account_info(accounts_iter)?;
     if !account_user.is_signer {
         return Err(ProgramError::MissingRequiredSignature);
     }
     let account_data = next_account_info(accounts_iter)?;
-
     let _system_program = next_account_info(accounts_iter)?;
 
     let rent_exemption = Rent::get()?.minimum_balance(instruction_data.len());
@@ -47,6 +45,27 @@ pub fn process_instruction(
             .borrow_mut()
             .copy_from_slice(instruction_data);
     }
+
+    if rent_exemption > account_data.lamports() {
+        invoke(
+            &instruction::transfer(
+                account_user.key,
+                account_data.key,
+                rent_exemption - account_data.lamports(),
+            ),
+            accounts,
+        )?;
+    } else if rent_exemption < account_data.lamports() {
+        let diff = account_data.lamports() - rent_exemption;
+        **account_user.try_borrow_mut_lamports()? += diff;
+        **account_data.try_borrow_mut_lamports()? -= diff;
+    }
+
+    account_data.resize(instruction_data.len())?;
+    account_data
+        .data
+        .borrow_mut()
+        .copy_from_slice(instruction_data);
 
     Ok(())
 }
