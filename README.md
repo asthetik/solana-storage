@@ -32,15 +32,29 @@ Solana SBF（Solana Bytecode Format）工具链当前版本（**v1.84**）尚不
 ### 本地开发
 
 1. **克隆仓库**
-   ```bash
-   git clone <repository-url>
-   cd solana-storage
-   ```
 
-4. **构建 BPF 程序**
-   ```bash
-   cargo build-sbf
-   ```
+```bash
+git clone <repository-url>
+cd solana-storage
+```
+
+2. **构建 BPF 程序**
+
+```bash
+cargo build-sbf
+```
+
+3. **更改Solana CLI集群为开发环境**
+
+```bash
+solana config set --url devnet
+```
+
+4. **部署**
+
+```bash
+solana program deploy target/deploy/solana_storage.so
+```
 
 ## 许可证
 

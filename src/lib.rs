@@ -1,11 +1,11 @@
 use solana_program::account_info::next_account_info;
+use solana_program::entrypoint;
 use solana_program::program::invoke_signed;
 use solana_program::program_error::ProgramError;
 use solana_program::rent::Rent;
 use solana_program::sysvar::Sysvar;
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
 use solana_system_interface::instruction;
-use solana_program::entrypoint;
 
 entrypoint!(process_instruction);
 
